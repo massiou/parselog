@@ -9,15 +9,20 @@ import os
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import NotFoundError
 from elasticsearch.exceptions import RequestError
+from elasticsearch.helpers import bulk
+from contextlib import contextmanager
+
 
 # Module imports
 import src.jenkins as jenkins
 import src.parser as parser
 from src.com import logging
+from src.com import timing
 from src.com import FC60x0_CONFIGS
 from src.com import VGTT_JOB
 from src.com import decompressed_tgz as decompressed_tgz
 
+@timing
 @logging
 def delete_data(index_del):
     '''
@@ -35,6 +40,7 @@ def delete_data(index_del):
 
     return delete_error_code
 
+@timing
 def index_data(log_file_path, es_index, log_type, version=None, pytestemb_version=None):
     '''
     @goal: index log file into elastic search database
@@ -55,21 +61,31 @@ def index_data(log_file_path, es_index, log_type, version=None, pytestemb_versio
         parser_c = parser.OctopylogParser(pytestemb_version)
 
     #Parse log file and format data to export
-    parsed_trace = parser_c.parse(log_file_path)
+    parsed_trace = parser_c.parse(log_file_path, version)
 
+    bulk_data = [data for data in parsed_trace]
+
+    try:
+        bulk(es_c, bulk_data, index=es_index, doc_type=log_type)
+    except RequestError as ex:
+        error_code = False
+        not_indexed_data.append(data)
+        print '%s bad index format' % es_index
+        
     #Index data into elastic search
-    for data in parsed_trace:
-        try:
-            data['version'] = version
-            es_c.index(index=es_index, doc_type=log_type, body=data)
-        except RequestError as ex:
-            error_code = False
-            not_indexed_data.append(data)
-            print '%s bad index format' % es_index
+    #for data in parsed_trace:
+    #    try:
+    #        data['version'] = version
+    #        es_c.index(index=es_index, doc_type=log_type, body=data)
+    #    except RequestError as ex:
+    #        error_code = False
+    #        not_indexed_data.append(data)
+    #        print '%s bad index format' % es_index
 
     return error_code, not_indexed_data
 
 @logging
+@timing
 def index_module(module_type, config, job_number='lastSuccessfulBuild', \
                  log_type='ckcm', url=None):
     '''
@@ -228,8 +244,8 @@ def get_cgmr(log_file_path_list):
     return [version, log_file_path]
 
 if __name__ == "__main__":
-    #index_module(module_type='FC6100', config='VGTT', log_type='ckcm', url=VGTT_JOB)
-    #index_module(module_type='FC6100', config='VGTT', log_type='octopylog', url=VGTT_JOB)
+    index_module(module_type='FC6100', config='VGTT', log_type='ckcm', url=VGTT_JOB)
+    index_module(module_type='FC6100', config='VGTT', log_type='octopylog', url=VGTT_JOB)
     for config_fc in FC60x0_CONFIGS:
         index_module(config_fc[0], config_fc[1], log_type='ckcm')
         index_module(config_fc[0], config_fc[1], log_type='octopylog')

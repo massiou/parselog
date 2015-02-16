@@ -6,6 +6,7 @@ __copyright__ = "Copyright 2015, Parrot"
 
 # Generic imports
 import os
+from datetime import datetime
 
 #Globals
 
@@ -44,6 +45,22 @@ def logging(func):
         return res
 
     return wrapper
+
+def timing(func):
+    '''
+    timing decorator
+    '''
+    def wrapper(*args, **kwargs):
+        '''
+        func wrapper
+        '''
+        start = datetime.now()
+        func(*args, **kwargs)
+        stop = datetime.now()
+        print 'Time execution %s, %s : %s sec' % (func.__name__, args, (stop - start).total_seconds())
+
+    return wrapper
+        
 
 def decompressed_tgz(tgz_file, output_directory):
     """

@@ -28,7 +28,7 @@ class CkcmParser(LogParser):
     def __init__(self):
         self.type = 'ckcm'
 
-    def parse(self, ckcm_file_path):
+    def parse(self, ckcm_file_path, version):
         '''
         wxCKCM parser
         @param ckcm_file_path: wxCKCM file path
@@ -58,7 +58,8 @@ class CkcmParser(LogParser):
                         'library': u'%s' % ckcm_line.library,
                         'ATCommand': u'%s' % ckcm_line.command, 
                         'ATEvent': u'%s' % ckcm_line.event,
-                        'index_time': 'u%s' % datetime.now().isoformat()
+                        'index_time': 'u%s' % datetime.now().isoformat(),
+                        'version': u'%s' % version
                           }
                     parsed_trace.append(data)
                 except UnicodeDecodeError:
@@ -74,7 +75,7 @@ class OctopylogParser(LogParser):
         self.type = 'octopylog'
         self.pytestemb_version = pytestemb_version
 
-    def parse(self, ctp_file_path):
+    def parse(self, ctp_file_path, version):
         '''
         CTP parser
         @param ctp_file_path: wxCKCM file path
@@ -83,7 +84,6 @@ class OctopylogParser(LogParser):
         '''
         #Read octopylog file
         test_title = "_".join(os.path.basename(ctp_file_path).split("_")[:-2])
-        #parsed_trace = []
         
         with open(ctp_file_path) as ctp_file:
             ctp_content = ctp_file.read()
@@ -104,11 +104,10 @@ class OctopylogParser(LogParser):
                         'text': u"%s" % ctp_line.message,
                         'timestamp': u"%s" % ctp_line.timestamp,
                         'library': u"%s" % ctp_line.message_type,
-                        'index_time': 'u%s' % datetime.now().isoformat()
+                        'index_time': 'u%s' % datetime.now().isoformat(),
+                        'version': u'%s' % version
                           }
                     yield data
                 except UnicodeDecodeError:
                     print 'Error >>> UnicodeDecodeError'
-
-        #return parsed_trace
 
