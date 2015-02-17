@@ -37,7 +37,6 @@ class CkcmParser(LogParser):
         '''
         #Read ckcm file
         test_title = "_".join(os.path.basename(ckcm_file_path).split("_")[:-2])
-        parsed_trace = []
         
         # Loop on ckcm file
         with open(ckcm_file_path) as ckcm_file:
@@ -61,11 +60,9 @@ class CkcmParser(LogParser):
                         'index_time': 'u%s' % datetime.now().isoformat(),
                         'version': u'%s' % version
                           }
-                    parsed_trace.append(data)
+                    yield data
                 except UnicodeDecodeError:
                     print 'Error >>> UnicodeDecodeError'
-
-        return parsed_trace
 
 class OctopylogParser(LogParser):
     '''

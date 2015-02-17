@@ -6,24 +6,60 @@ __copyright__ = "Copyright 2015, Parrot"
 
 # Generic imports
 import os
+import sys
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import NotFoundError
 from elasticsearch.exceptions import RequestError
 from elasticsearch.helpers import bulk
 from contextlib import contextmanager
 
+#logging imports
+import logging
+from logging.handlers import RotatingFileHandler
+from logging import StreamHandler
+
+#fabric imports
+from fabric.colors import red
+from fabric.colors import yellow
+from fabric.colors import blue
+from fabric.colors import white
 
 # Module imports
 import src.jenkins as jenkins
 import src.parser as parser
-from src.com import logging
 from src.com import timing
 from src.com import FC60x0_CONFIGS
 from src.com import VGTT_JOB
 from src.com import decompressed_tgz as decompressed_tgz
 
+import ipdb
+
+# logger object creation
+logger = logging.getLogger('index')
+logger.setLevel(logging.DEBUG)
+# Build formatter for each handler
+formatter_file = logging.Formatter('[%(asctime)s][%(levelname)s] %(message)s')
+formatter_console = logging.Formatter(yellow('[%(asctime)s]') + \
+                                      blue('[%(levelname)s]') + \
+                                      white(' %(message)s'))
+
+# Set handlers filesize is < 1Mo
+file_handler = RotatingFileHandler('index.log', 'a', 1000000, 1)
+stream_handler = logging.StreamHandler(stream=sys.stdout)
+
+# Set formatters
+file_handler.setFormatter(formatter_file)
+stream_handler.setFormatter(formatter_console)
+
+# Set level
+file_handler.setLevel(logging.INFO)
+stream_handler.setLevel(logging.INFO)
+
+# Add handlers to logger
+logger.addHandler(file_handler)
+logger.addHandler(stream_handler)
+
 @timing
-@logging
 def delete_data(index_del):
     '''
     @goal: delete index from into elasticsearch database
@@ -34,14 +70,15 @@ def delete_data(index_del):
 
     try:
         delete_error_code = es_c.indices.delete(index = index_del)
-        print '>>> delete index: "%s" in database' % index_del
+        logger.info(white('Delete index: "%s" in database') % index_del)
     except NotFoundError:
-        print '>>> No such index: "%s" in database' % index_del
+        logger.error(red('No such index: "%s" in database') % (index_del))
 
     return delete_error_code
 
 @timing
-def index_data(log_file_path, es_index, log_type, version=None, pytestemb_version=None):
+def index_data(log_file_path, es_index, log_type, version=None, \
+                                                  pytestemb_version=None):
     '''
     @goal: index log file into elastic search database
     @param log_file_path: path to file traces directory
@@ -63,29 +100,19 @@ def index_data(log_file_path, es_index, log_type, version=None, pytestemb_versio
     #Parse log file and format data to export
     parsed_trace = parser_c.parse(log_file_path, version)
 
-    bulk_data = [data for data in parsed_trace]
-
     try:
+        bulk_data = [data for data in parsed_trace]
         bulk(es_c, bulk_data, index=es_index, doc_type=log_type)
+    except IndexError as ex:
+        logger.error(red("%s\npytestemb version:%s\nindex:%s") % \
+                     (log_file_path, pytestemb_version, es_index))
     except RequestError as ex:
         error_code = False
         not_indexed_data.append(data)
-        print '%s bad index format' % es_index
-        
-    #Index data into elastic search
-    #for data in parsed_trace:
-    #    try:
-    #        data['version'] = version
-    #        es_c.index(index=es_index, doc_type=log_type, body=data)
-    #    except RequestError as ex:
-    #        error_code = False
-    #        not_indexed_data.append(data)
-    #        print '%s bad index format' % es_index
+        logger.error(red('%s bad index format') % es_index)
 
     return error_code, not_indexed_data
 
-@logging
-@timing
 def index_module(module_type, config, job_number='lastSuccessfulBuild', \
                  log_type='ckcm', url=None):
     '''
@@ -103,6 +130,7 @@ def index_module(module_type, config, job_number='lastSuccessfulBuild', \
                                      log_type = log_type, \
                                      url_results = url)
 
+    logger.info("Jenkins job: %s" % jenkins_job)
     #Decompressed ckcm.tgz into /tmp/
     if log_type == 'ckcm':
         tgz_file = jenkins_job.ckcm_tgz_file_name
@@ -110,7 +138,7 @@ def index_module(module_type, config, job_number='lastSuccessfulBuild', \
         tgz_file = jenkins_job.octopylog_tgz_file_name
 
     directory_c = decompressed_tgz(tgz_file, '/tmp')
-    print directory_c
+    logger.info("current_directory: %s" % directory_c)
 
     # Get pytestemb version
     pytestemb_version = None
@@ -118,6 +146,7 @@ def index_module(module_type, config, job_number='lastSuccessfulBuild', \
         pytestemb_version = get_pytestemb_version(directory_c)
 
     package_version = get_package_version(directory_c)
+
     #Build elastic search index
     es_index_current = package_version.lower() + '_' + module_type.lower() + \
                        '_' + config.lower() + '_' + log_type
@@ -129,10 +158,13 @@ def index_module(module_type, config, job_number='lastSuccessfulBuild', \
     delete_data(es_index_current)
 
     #Index each line from log file traces
-    print "Version : %s, Package: %s, Config: %s" % (package_version, module_type, config)
+    logger.info("Version : %s, Package: %s, Config: %s" % \
+                 (package_version, module_type, config))
     for file_c in os.listdir(directory_c):
-        print "Parsing... %s" % file_c
-        err = index_data(os.path.join(directory_c, file_c), es_index_current, log_type, version = es_field_version, pytestemb_version = pytestemb_version)
+        logger.info("    Parsing... %s" % file_c)
+        err = index_data(os.path.join(directory_c, file_c), es_index_current, \
+                         log_type, version = es_field_version, \
+                         pytestemb_version = pytestemb_version)
         err_list.append(err)
 
     return all(err_list)
@@ -206,8 +238,7 @@ def get_cgmrex(log_file_path_list):
             if '+CGMREX:' in line:
                 version = line.split("'")[1].lower()
                 version = version.split()[0] #Ensure no space in version
-                print "CGMREX in %s" % log_file_path
-                print line
+                logger.info("CGMREX in %s\n%s" % (log_file_path, line))
                 found = True
                 break
 
@@ -233,17 +264,19 @@ def get_cgmr(log_file_path_list):
             file_content = ckcm_file.read()
         for line in file_content.split('\n'):
             #Found '+CGMR in file'
-            if '+CGMR:HW' in line: #and line.startswith("["):
+            if '+CGMR:HW' in line:
+                # Get version from line
                 version = line.split("-SW")[1].replace("<LF>", '').replace("<0x0D><0x0A>", "")
-                print "CGMR in %s" % log_file_path
-                print "Version found >>> %s"% line
-                print "Version : %s" % version
+                logger.info("CGMR in %s" % log_file_path)
+                logger.info("Version found >>> %s"% line)
+                logger.info("Version : %s" % version)
                 found = True
                 break
 
     return [version, log_file_path]
 
 if __name__ == "__main__":
+
     index_module(module_type='FC6100', config='VGTT', log_type='ckcm', url=VGTT_JOB)
     index_module(module_type='FC6100', config='VGTT', log_type='octopylog', url=VGTT_JOB)
     for config_fc in FC60x0_CONFIGS:
