@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 """ Get jenkins logs """
 
-__copyright__ = "Copyright 2015, Parrot"
+__copyright__ = "Copyright 2015, Matthieu Velay"
 
 
 # Generic imports
@@ -11,6 +11,7 @@ import shutil
 
 # Module imports
 from src.com import JENKINS_SERVER
+from src.com import logger
 
 class JenkinsJob(object):
     """
@@ -25,7 +26,7 @@ class JenkinsJob(object):
         Download tgz trace file
         Patch to avoid jenkins connection error (SSLv3 forced)
         """
-
+        
         self._ckcm_tgz_file_name = '/tmp/ckcm-%s-%s.tgz' % (config_hw, config_sw)
         self._octopylog_tgz_file_name = '/tmp/octopylog-%s-%s.tgz' % (config_hw, config_sw)
         self.server = JENKINS_SERVER
@@ -97,9 +98,11 @@ class JenkinsJob(object):
                 download_tgz_file(self.ctp_traces, self._octopylog_tgz_file_name)
 
         except urllib2.HTTPError as exc:
-            print 'urllib2.HTTPError'
+            logger.error('urllib2.HTTPError')
+            logger.error("url_results: %s", url_results)
             raise exc
         except Exception as exc:
+            logger.error('url_results:%s', self.results)
             raise exc
 
     @property
@@ -115,4 +118,7 @@ class JenkinsJob(object):
         getter on octopylog_tgz_file_name
         """
         return self._octopylog_tgz_file_name
+
+    def get_url(self):
+        return self.results
 

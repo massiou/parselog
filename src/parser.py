@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 """ Log parser classes """
 
-__copyright__ = "Copyright 2015, Parrot"
+__copyright__ = "Copyright 2015, Matthieu Velay"
 
 #imports
 import os
@@ -10,6 +10,8 @@ import log
 import pdb
 import sys
 from datetime import datetime
+
+from src.com import logger
 
 class LogParser(object):
     '''
@@ -37,7 +39,7 @@ class CkcmParser(LogParser):
         '''
         #Read ckcm file
         test_title = "_".join(os.path.basename(ckcm_file_path).split("_")[:-2])
-        
+
         # Loop on ckcm file
         with open(ckcm_file_path) as ckcm_file:
             ckcm_content = ckcm_file.read()
@@ -62,7 +64,7 @@ class CkcmParser(LogParser):
                           }
                     yield data
                 except UnicodeDecodeError:
-                    print 'Error >>> UnicodeDecodeError'
+                    logger.error(UnicodeDecodeError)
 
 class OctopylogParser(LogParser):
     '''
@@ -106,5 +108,5 @@ class OctopylogParser(LogParser):
                           }
                     yield data
                 except UnicodeDecodeError:
-                    print 'Error >>> UnicodeDecodeError'
+                    logger.error(UnicodeDecodeError)
 
