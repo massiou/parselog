@@ -20,16 +20,9 @@ from fabric.colors import blue
 from fabric.colors import white
 
 # Globals
-JENKINS_SERVER = 'https://snake.parrot.biz:8080/'
+JENKINS_SERVER = '' # Fill jenkins server url #TODO
 
-FC60x0_CONFIGS =  ('fc6000tn', '256_Generic_VR-Asia'), \
-                  ('fc6000tn', '256_Panasonic-Honda-14M-T5AA'), \
-                  ('fc6000tn', '256_Panasonic-Honda-14M-T5AA_VR-NorthAmerica'), \
-                  ('fc6000ts', '256_Generic'),\
-                  ('fc6000ts', '256_Pioneer-KM506'),\
-                  ('fc6000ts', '256_AlpineDalian-Honda-G6'), \
-                  ('fc6050w',  'Demo'), \
-                  ('fc6050b',  'Demo_B'),
+FC60x0_CONFIGS =  (,) # Fill jobs configs to parse #TODO
 
 # logger object creation
 logger = logging.getLogger('index')
