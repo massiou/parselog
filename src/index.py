@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 ''' Index logs in Elasticsearch '''
 
-__copyright__ = "Copyright 2015, Matthieu Velay"
+__copyright__ = "Copyright 2015, Parrot"
 
 # Generic imports
 import os
@@ -234,8 +234,6 @@ def get_cgmr(log_file_path_list):
             if '+CGMR:HW' in line:
                 # Get version from line
                 parsed_line = re.match("(.*)-SW(.*)<0x0D><0x0A>(.*)", line)
-                import ipdb
-                ipdb.set_trace()
                 if parsed_line:
                     version = parsed_line.group(2)
                     logger.debug("CGMR in %s", log_file_path)
@@ -262,6 +260,8 @@ def elastic_search():
 
 if __name__ == "__main__":
 
+    index_module(module_type='FC6100', config='VGTT', log_type='ckcm', url=VGTT_JOB)
+    index_module(module_type='FC6100', config='VGTT', log_type='octopylog', url=VGTT_JOB)
     for config_fc in FC60x0_CONFIGS:
         index_module(config_fc[0], config_fc[1], log_type='ckcm')
         index_module(config_fc[0], config_fc[1], log_type='octopylog')

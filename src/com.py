@@ -2,10 +2,11 @@
 # -*- coding: UTF-8 -*-
 """ Common """
 
-__copyright__ = "Copyright 2015, Matthieu Velay"
+__copyright__ = "Copyright 2015, Parrot"
 
 # Generic imports
 import sys
+import requests
 from datetime import datetime
 
 # logging imports
@@ -20,9 +21,20 @@ from fabric.colors import blue
 from fabric.colors import white
 
 # Globals
-JENKINS_SERVER = '' # Fill jenkins server url #TODO
+JENKINS_SERVER = 'https://snake.parrot.biz:8080/'
 
-FC60x0_CONFIGS =  (,) # Fill jobs configs to parse #TODO
+FC60x0_CONFIGS =  ('fc6000tn', '256_Generic_VR-Asia'), \
+                  ('fc6000tn', '256_Panasonic-Honda-14M-T5AA'), \
+                  ('fc6000tn', '256_Panasonic-Honda-14M-T5AA_VR-NorthAmerica'), \
+                  ('fc6000ts', '256_Generic'),\
+                  ('fc6000ts', '256_Pioneer-KM506'),\
+                  ('fc6000ts', '256_AlpineDalian-Honda-G6'), \
+                  ('fc6050w',  'Demo'), \
+                  ('fc6050b',  'Demo_B'),
+
+VGTT_JOB_NUMBER = u"lastSuccessfulBuild"
+VGTT_JOB = u"https://snake:8080/job/03_OV_VGTT_Tuner_AT_Cmds/" + \
+            VGTT_JOB_NUMBER + u"/CONFIG_HW=FC6100,label=VGTT/artifact/results/"
 
 # logger object creation
 logger = logging.getLogger('index')
@@ -88,4 +100,14 @@ def decompressed_tgz(tgz_file, output_directory):
             untar_directory = None
     return untar_directory
 
+def download_tgz_file(url_tgz_traces, output_file_name):
+    '''
+    @goal: download tgz file
+    @param url_tgz_traces: tar.gz file url
+    @param output_file_name: local filename where to save file
+    '''
+
+    response = requests.get(url_tgz_traces, verify=False)
+    with open(output_file_name, 'wb') as output_file:
+        output_file.write(response.content)
 

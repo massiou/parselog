@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 ''' Generic log class '''
 
-__copyright__ = "Copyright 2015, Matthieu Velay"
+__copyright__ = "Copyright 2015, Parrot"
 
 # Generic imports
 import re

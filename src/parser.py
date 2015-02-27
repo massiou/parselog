@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 """ Log parser classes """
 
-__copyright__ = "Copyright 2015, Matthieu Velay"
+__copyright__ = "Copyright 2015, Parrot"
 
 #imports
 import os
