@@ -12,29 +12,29 @@ from datetime import datetime
 # logging imports
 import logging
 from logging.handlers import RotatingFileHandler
-from logging import StreamHandler
 
 # fabric imports
-from fabric.colors import red
 from fabric.colors import yellow
 from fabric.colors import blue
 from fabric.colors import white
 
 # Globals
-JENKINS_SERVER = 'https://snake.parrot.biz:8080/'
+JENKINS_SERVER = 'https://komodo.parrot.biz:8080/'
 
-FC60x0_CONFIGS =  ('fc6000tn', '256_Generic_VR-Asia'), \
-                  ('fc6000tn', '256_Panasonic-Honda-14M-T5AA'), \
-                  ('fc6000tn', '256_Panasonic-Honda-14M-T5AA_VR-NorthAmerica'), \
-                  ('fc6000ts', '256_Generic'),\
-                  ('fc6000ts', '256_Pioneer-KM506'),\
-                  ('fc6000ts', '256_AlpineDalian-Honda-G6'), \
-                  ('fc6050w',  'Demo'), \
-                  ('fc6050b',  'Demo_B'),
+FC60x0_CONFIGS = (('fc6000p', '256L_Generic_I2C'),
+                  ('fc6000tn', '256_Generic_VR-Asia'),
+                  ('fc6000tn', '256_Panasonic-Honda-14M-T5AA'),
+                  ('fc6000tn', '256_Panasonic-Honda-14M-T5AA_VR-NorthAmerica'),
+                  ('fc6000ts', '256_Generic'),
+                  ('fc6000ts', '256_Pioneer-KM506'),
+                  ('fc6000ts', '256_AlpineDalian-Honda-G6'),
+                  ('fc6050w',  'Demo'),
+                  ('fc6050b',  'Demo_B'))
 
-VGTT_JOB_NUMBER = u"lastSuccessfulBuild"
-VGTT_JOB = u"https://snake:8080/job/03_OV_VGTT_Tuner_AT_Cmds/" + \
-            VGTT_JOB_NUMBER + u"/CONFIG_HW=FC6100,label=VGTT/artifact/results/"
+FC60x0_CONFIGS = (('fc6000p', '256L_Generic_I2C'),
+                  ('fc6000tn', '256_Generic_VR-Asia'),
+                  ('fc6050w',  'Demo'))
+
 
 # logger object creation
 logger = logging.getLogger('index')
@@ -61,6 +61,12 @@ stream_handler.setLevel(logging.INFO)
 logger.addHandler(file_handler)
 logger.addHandler(stream_handler)
 
+#Exceptions
+
+class UntarException(Exception):
+    """Untar failed Exception"""
+
+
 #Decorators
 def timing(func):
     '''
@@ -73,10 +79,11 @@ def timing(func):
         start = datetime.now()
         func(*args, **kwargs)
         stop = datetime.now()
-        logger.debug('Time execution %s, %s : %s sec', \
-               func.__name__, args, (stop - start).total_seconds())
+        logger.debug('Time execution %s, %s : %s sec',
+                     func.__name__, args, (stop - start).total_seconds())
 
     return wrapper
+
 
 def decompressed_tgz(tgz_file, output_directory):
     """
@@ -96,9 +103,10 @@ def decompressed_tgz(tgz_file, output_directory):
             untar_directory = '/'.join([output_directory, tar_directory])
             logger.info("%s untarred", tgz_file.name)
         else:
-            logger.warning("%s untar failed", tgz_file)
-            untar_directory = None
+            raise UntarException("%s untar failed", tgz_file)
+
     return untar_directory
+
 
 def download_tgz_file(url_tgz_traces, output_file_name):
     '''
