@@ -297,7 +297,7 @@ def elastic_search(hosts=None):
         logger.info('%d successfully indexed data', count_lines)
 
 
-def index_table(table):
+def index_table(table, ip_address):
     """
     Index MySQL table into elasticsearch instance
     """
@@ -306,7 +306,7 @@ def index_table(table):
                                   database="sandbox", table=table)
     table_parsed = parser_c.parse()
 
-    with elastic_search(hosts="172.20.22.104") as es_c:
+    with elastic_search(hosts=ip_address) as es_c:
         try:
             index_es = table
             bulk_data = [data for data in table_parsed]
@@ -328,5 +328,5 @@ if __name__ == "__main__":
     #for config_fc in FC60x0_CONFIGS:
     #    index_module(config_fc[0], config_fc[1], log_type='octopylog')
 
-    index_table("t_statistic")
-    index_table("t_performance")
+    index_table("t_statistic", "172.20.22.104")
+    index_table("t_performance", "172.20.22.104")
